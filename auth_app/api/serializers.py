@@ -1,9 +1,9 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from auth_app.utils import get_general_error_message
-
-User = get_user_model()
+from common.validators import (
+    validate_matching_passwords,
+    validate_unique_email,
+)
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -15,14 +15,13 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         """Validate email uniqueness."""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(get_general_error_message())
-
+        validate_unique_email(value)
         return value
 
     def validate(self, attrs):
-        """Validate matching passwords."""
-        if attrs["password"] != attrs["confirmed_password"]:
-            raise serializers.ValidationError(get_general_error_message())
-
+        """Validate registration data."""
+        validate_matching_passwords(
+            attrs["password"],
+            attrs["confirmed_password"],
+        )
         return attrs
