@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from auth_app.api.serializers import RegisterSerializer
-from auth_app.services import create_inactive_user
+from auth_app.services.user_service import create_inactive_user
 
 
 class RegisterView(APIView):
