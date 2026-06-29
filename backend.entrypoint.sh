@@ -19,23 +19,21 @@ python manage.py makemigrations
 python manage.py migrate
 
 # Create a superuser using environment variables
-# (Dein Superuser-Erstellungs-Code bleibt gleich)
 python manage.py shell <<EOF
 import os
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'adminpassword')
 
-if not User.objects.filter(username=username).exists():
-    print(f"Creating superuser '{username}'...")
-    # Korrekter Aufruf: username hier übergeben
-    User.objects.create_superuser(username=username, email=email, password=password)
-    print(f"Superuser '{username}' created.")
+email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@example.com")
+password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "adminpassword")
+
+if not User.objects.filter(email=email).exists():
+    print(f"Creating superuser '{email}'...")
+    User.objects.create_superuser(email=email, password=password)
+    print(f"Superuser '{email}' created.")
 else:
-    print(f"Superuser '{username}' already exists.")
+    print(f"Superuser '{email}' already exists.")
 EOF
 
 python manage.py rqworker default &
