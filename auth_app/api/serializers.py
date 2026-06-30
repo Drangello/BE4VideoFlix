@@ -1,5 +1,7 @@
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 
+from common.responses import GENERAL_AUTH_ERROR
 from common.validators import (
     validate_matching_passwords,
     validate_unique_email,
@@ -24,4 +26,24 @@ class RegisterSerializer(serializers.Serializer):
             attrs["password"],
             attrs["confirmed_password"],
         )
+        return attrs
+
+
+class LoginSerializer(serializers.Serializer):
+    """Validate login credentials."""
+
+    email = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        """Authenticate the user."""
+        user = authenticate(
+            email=attrs["email"],
+            password=attrs["password"],
+        )
+
+        if user is None:
+            raise serializers.ValidationError(GENERAL_AUTH_ERROR)
+
+        attrs["user"] = user
         return attrs

@@ -3,19 +3,21 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auth_app.api.serializers import RegisterSerializer
+from auth_app.api.serializers import LoginSerializer, RegisterSerializer
 from auth_app.services.token_service import (
+    create_activation_data,
+    create_token_pair,
     get_user_id_from_uid,
     is_valid_token,
+    set_auth_cookies,
 )
-from auth_app.services.token_service import create_activation_data
 from auth_app.services.user_service import (
     activate_user,
     create_inactive_user,
     get_user_by_id,
 )
 from auth_app.tasks import send_activation_email_task
-from common.responses import created_response
+from common.responses import created_response, ok_response
 
 
 class RegisterView(APIView):
@@ -74,3 +76,27 @@ class ActivateView(APIView):
             {"message": "Activation failed."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class LoginView(APIView):
+    """Authenticate a user and set JWT cookies."""
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+        token_pair = create_token_pair(user)
+
+        response = ok_response(
+            {
+                "detail": "Login successful",
+                "user": {
+                    "id": user.id,
+                    "username": user.email,
+                },
+            }
+        )
+
+        set_auth_cookies(response, token_pair)
+        return response
