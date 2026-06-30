@@ -14,12 +14,12 @@ def create_activation_data(user):
 
 
 def get_user_id_from_uid(uidb64):
-    """Decode uidb64 and return user id."""
+    """Decode uidb64 and return the user id."""
     return force_str(urlsafe_base64_decode(uidb64))
 
 
 def is_valid_token(user, token):
-    """Return whether the given token is valid."""
+    """Return whether the token is valid."""
     return default_token_generator.check_token(user, token)
 
 
@@ -31,6 +31,12 @@ def create_token_pair(user):
         "access": str(refresh.access_token),
         "refresh": str(refresh),
     }
+
+
+def create_access_token(refresh_token):
+    """Create a new access token from a refresh token."""
+    refresh = RefreshToken(refresh_token)
+    return str(refresh.access_token)
 
 
 def set_auth_cookies(response, token_pair):

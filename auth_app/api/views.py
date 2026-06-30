@@ -1,14 +1,18 @@
 import django_rq
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 
 from auth_app.api.serializers import LoginSerializer, RegisterSerializer
 from auth_app.services.token_service import (
+    create_access_token,
     create_activation_data,
     create_token_pair,
     get_user_id_from_uid,
     is_valid_token,
+    set_access_cookie,
     set_auth_cookies,
 )
 from auth_app.services.user_service import (
@@ -22,6 +26,9 @@ from common.responses import created_response, ok_response
 
 class RegisterView(APIView):
     """Handle user registration."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -54,6 +61,9 @@ class RegisterView(APIView):
 class ActivateView(APIView):
     """Activate a user account."""
 
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def get(self, request, uidb64, token):
         try:
             user_id = get_user_id_from_uid(uidb64)
@@ -81,6 +91,9 @@ class ActivateView(APIView):
 class LoginView(APIView):
     """Authenticate a user and set JWT cookies."""
 
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -100,3 +113,43 @@ class LoginView(APIView):
 
         set_auth_cookies(response, token_pair)
         return response
+
+
+class TokenRefreshView(APIView):
+    """Create a new access token from the refresh cookie."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return self.get_missing_token_response()
+
+        try:
+            access_token = create_access_token(refresh_token)
+        except TokenError:
+            return self.get_invalid_token_response()
+
+        response = ok_response(
+            {
+                "detail": "Token refreshed",
+                "access": access_token,
+            }
+        )
+        set_access_cookie(response, access_token)
+
+        return response
+
+    def get_missing_token_response(self):
+        return Response(
+            {"detail": "Refresh token missing."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def get_invalid_token_response(self):
+        return Response(
+            {"detail": "Invalid refresh token."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
