@@ -39,6 +39,11 @@ def create_access_token(refresh_token):
     return str(refresh.access_token)
 
 
+def blacklist_refresh_token(refresh_token):
+    """Blacklist a refresh token."""
+    RefreshToken(refresh_token).blacklist()
+
+
 def set_auth_cookies(response, token_pair):
     """Set access and refresh token cookies."""
     set_access_cookie(response, token_pair["access"])
@@ -67,6 +72,12 @@ def set_refresh_cookie(response, token):
         samesite="Lax",
         max_age=get_token_max_age("REFRESH_TOKEN_LIFETIME"),
     )
+
+
+def delete_auth_cookies(response):
+    """Delete authentication cookies."""
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
 
 
 def get_token_max_age(setting_name):

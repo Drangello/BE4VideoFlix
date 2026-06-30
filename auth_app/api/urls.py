@@ -5,6 +5,7 @@ from auth_app.api.views import (
     LoginView,
     RegisterView,
     TokenRefreshView,
+    LogoutView,
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
         ActivateView.as_view(),
         name="activate",
     ),
+    path("logout/", LogoutView.as_view(), name="logout"),
 ]

@@ -14,6 +14,8 @@ from auth_app.services.token_service import (
     is_valid_token,
     set_access_cookie,
     set_auth_cookies,
+    blacklist_refresh_token,
+    delete_auth_cookies,
 )
 from auth_app.services.user_service import (
     activate_user,
@@ -152,4 +154,46 @@ class TokenRefreshView(APIView):
         return Response(
             {"detail": "Invalid refresh token."},
             status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+
+class LogoutView(APIView):
+    """Blacklist refresh token and clear auth cookies."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return self.get_missing_token_response()
+
+        try:
+            blacklist_refresh_token(refresh_token)
+        except TokenError:
+            return self.get_invalid_token_response()
+
+        response = ok_response(
+            {
+                "detail": (
+                    "Logout successful! All tokens will be deleted. "
+                    "Refresh token is now invalid."
+                ),
+            }
+        )
+        delete_auth_cookies(response)
+
+        return response
+
+    def get_missing_token_response(self):
+        return Response(
+            {"detail": "Refresh token missing."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def get_invalid_token_response(self):
+        return Response(
+            {"detail": "Invalid refresh token."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
