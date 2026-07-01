@@ -169,7 +169,7 @@ DEFAULT_FROM_EMAIL = os.getenv(
 
 FRONTEND_BASE_URL = os.getenv(
     "FRONTEND_BASE_URL",
-    "http://localhost:4200",
+    "http://127.0.0.1:5500",
 )
 
 SIMPLE_JWT = {
