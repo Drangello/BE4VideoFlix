@@ -7,6 +7,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from auth_app.api.serializers import (
     LoginSerializer,
+    PasswordConfirmSerializer,
     PasswordResetSerializer,
     RegisterSerializer,
 )
@@ -27,6 +28,7 @@ from auth_app.services.user_service import (
     create_inactive_user,
     get_user_by_email,
     get_user_by_id,
+    set_user_password,
 )
 from auth_app.tasks import (
     send_activation_email_task,
@@ -220,7 +222,7 @@ class PasswordResetView(APIView):
 
         user = get_user_by_email(serializer.validated_data["email"])
 
-        if user:
+        if user and user.is_active:
             reset_data = create_password_reset_data(user)
             django_rq.enqueue(
                 send_password_reset_email_task,
@@ -231,4 +233,41 @@ class PasswordResetView(APIView):
 
         return ok_response(
             {"detail": "An email has been sent to reset your password."}
+        )
+
+
+class PasswordConfirmView(APIView):
+    """Set a new password with a valid reset token."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        serializer = PasswordConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = self.get_user(uidb64)
+
+        if not user or not is_valid_token(user, token):
+            return self.get_invalid_token_response()
+
+        set_user_password(user, serializer.validated_data["new_password"])
+
+        return ok_response(
+            {"detail": "Your Password has been successfully reset."}
+        )
+
+    def get_user(self, uidb64):
+        """Return a user decoded from uidb64."""
+        try:
+            user_id = get_user_id_from_uid(uidb64)
+        except Exception:
+            return None
+
+        return get_user_by_id(user_id)
+
+    def get_invalid_token_response(self):
+        return Response(
+            {"detail": "Invalid or expired password reset token."},
+            status=status.HTTP_400_BAD_REQUEST,
         )

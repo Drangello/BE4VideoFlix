@@ -26,3 +26,9 @@ def activate_user(user):
     """Activate a user account."""
     user.is_active = True
     user.save(update_fields=["is_active"])
+
+
+def set_user_password(user, password):
+    """Set and save a user's password."""
+    user.set_password(password)
+    user.save(update_fields=["password"])

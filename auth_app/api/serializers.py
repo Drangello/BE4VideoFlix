@@ -54,3 +54,18 @@ class PasswordResetSerializer(serializers.Serializer):
     """Validate password reset data."""
 
     email = serializers.EmailField()
+
+
+class PasswordConfirmSerializer(serializers.Serializer):
+    """Validate a new password."""
+
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        """Validate matching passwords."""
+        validate_matching_passwords(
+            attrs["new_password"],
+            attrs["confirm_password"],
+        )
+        return attrs

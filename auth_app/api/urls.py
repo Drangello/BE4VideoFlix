@@ -4,6 +4,7 @@ from auth_app.api.views import (
     ActivateView,
     LoginView,
     LogoutView,
+    PasswordConfirmView,
     PasswordResetView,
     RegisterView,
     TokenRefreshView,
@@ -18,6 +19,11 @@ urlpatterns = [
         "password_reset/",
         PasswordResetView.as_view(),
         name="password-reset",
+    ),
+    path(
+        "password_confirm/<uidb64>/<token>/",
+        PasswordConfirmView.as_view(),
+        name="password-confirm",
     ),
     path(
         "activate/<uidb64>/<token>/",
