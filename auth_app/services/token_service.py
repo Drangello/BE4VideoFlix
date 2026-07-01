@@ -5,12 +5,22 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-def create_activation_data(user):
-    """Create uid and token for account activation."""
+def create_token_data(user):
+    """Create uid and token data for a user."""
     return {
         "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
         "token": default_token_generator.make_token(user),
     }
+
+
+def create_activation_data(user):
+    """Create token data for account activation."""
+    return create_token_data(user)
+
+
+def create_password_reset_data(user):
+    """Create token data for password reset."""
+    return create_token_data(user)
 
 
 def get_user_id_from_uid(uidb64):

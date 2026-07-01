@@ -5,24 +5,33 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 
-from auth_app.api.serializers import LoginSerializer, RegisterSerializer
+from auth_app.api.serializers import (
+    LoginSerializer,
+    PasswordResetSerializer,
+    RegisterSerializer,
+)
 from auth_app.services.token_service import (
+    blacklist_refresh_token,
     create_access_token,
     create_activation_data,
+    create_password_reset_data,
     create_token_pair,
+    delete_auth_cookies,
     get_user_id_from_uid,
     is_valid_token,
     set_access_cookie,
     set_auth_cookies,
-    blacklist_refresh_token,
-    delete_auth_cookies,
 )
 from auth_app.services.user_service import (
     activate_user,
     create_inactive_user,
+    get_user_by_email,
     get_user_by_id,
 )
-from auth_app.tasks import send_activation_email_task
+from auth_app.tasks import (
+    send_activation_email_task,
+    send_password_reset_email_task,
+)
 from common.responses import created_response, ok_response
 
 
@@ -196,4 +205,30 @@ class LogoutView(APIView):
         return Response(
             {"detail": "Invalid refresh token."},
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PasswordResetView(APIView):
+    """Queue a password reset email."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = get_user_by_email(serializer.validated_data["email"])
+
+        if user:
+            reset_data = create_password_reset_data(user)
+            django_rq.enqueue(
+                send_password_reset_email_task,
+                user.id,
+                reset_data["uidb64"],
+                reset_data["token"],
+            )
+
+        return ok_response(
+            {"detail": "An email has been sent to reset your password."}
         )

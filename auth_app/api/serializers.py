@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+
 from rest_framework import serializers
 
 from common.responses import GENERAL_AUTH_ERROR
@@ -47,3 +48,9 @@ class LoginSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    """Validate password reset data."""
+
+    email = serializers.EmailField()
