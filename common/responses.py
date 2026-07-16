@@ -15,11 +15,3 @@ def created_response(data):
 def ok_response(data):
     """Return a 200 OK response."""
     return Response(data, status=status.HTTP_200_OK)
-
-
-def bad_request_response(message):
-    """Return a 400 bad request response."""
-    return Response(
-        {"detail": message},
-        status=status.HTTP_400_BAD_REQUEST,
-    )

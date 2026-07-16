@@ -1,4 +1,3 @@
-import django_rq
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -11,30 +10,26 @@ from auth_app.api.serializers import (
     PasswordResetSerializer,
     RegisterSerializer,
 )
+from auth_app.services.account_service import (
+    activate_account,
+    confirm_password_reset,
+    register_account,
+    request_password_reset,
+)
 from auth_app.services.token_service import (
     blacklist_refresh_token,
     create_access_token,
-    create_activation_data,
-    create_password_reset_data,
     create_token_pair,
     delete_auth_cookies,
-    get_user_id_from_uid,
-    is_valid_token,
     set_access_cookie,
     set_auth_cookies,
 )
-from auth_app.services.user_service import (
-    activate_user,
-    create_inactive_user,
-    get_user_by_email,
-    get_user_by_id,
-    set_user_password,
-)
-from auth_app.tasks import (
-    send_activation_email_task,
-    send_password_reset_email_task,
-)
 from common.responses import created_response, ok_response
+
+LOGOUT_DETAIL = (
+    "Logout successful! All tokens will be deleted. "
+    "Refresh token is now invalid."
+)
 
 
 class RegisterView(APIView):
@@ -46,26 +41,13 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        user = create_inactive_user(
+        user, activation_data = register_account(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
         )
-        activation_data = create_activation_data(user)
-
-        django_rq.enqueue(
-            send_activation_email_task,
-            user.id,
-            activation_data["uidb64"],
-            activation_data["token"],
-        )
-
         return created_response(
             {
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                },
+                "user": {"id": user.id, "email": user.email},
                 "token": activation_data["token"],
             }
         )
@@ -78,17 +60,8 @@ class ActivateView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
-        try:
-            user_id = get_user_id_from_uid(uidb64)
-            user = get_user_by_id(user_id)
-        except Exception:
+        if not activate_account(uidb64, token):
             return self.get_error_response()
-
-        if not user or not is_valid_token(user, token):
-            return self.get_error_response()
-
-        activate_user(user)
-
         return Response(
             {"message": "Account successfully activated."},
             status=status.HTTP_200_OK,
@@ -110,20 +83,14 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         user = serializer.validated_data["user"]
         token_pair = create_token_pair(user)
-
         response = ok_response(
             {
                 "detail": "Login successful",
-                "user": {
-                    "id": user.id,
-                    "username": user.email,
-                },
+                "user": {"id": user.id, "username": user.email},
             }
         )
-
         set_auth_cookies(response, token_pair)
         return response
 
@@ -144,15 +111,8 @@ class TokenRefreshView(APIView):
             access_token = create_access_token(refresh_token)
         except TokenError:
             return self.get_invalid_token_response()
-
-        response = ok_response(
-            {
-                "detail": "Token refreshed",
-                "access": access_token,
-            }
-        )
+        response = ok_response({"detail": "Token refreshed", "access": access_token})
         set_access_cookie(response, access_token)
-
         return response
 
     def get_missing_token_response(self):
@@ -184,17 +144,8 @@ class LogoutView(APIView):
             blacklist_refresh_token(refresh_token)
         except TokenError:
             return self.get_invalid_token_response()
-
-        response = ok_response(
-            {
-                "detail": (
-                    "Logout successful! All tokens will be deleted. "
-                    "Refresh token is now invalid."
-                ),
-            }
-        )
+        response = ok_response({"detail": LOGOUT_DETAIL})
         delete_auth_cookies(response)
-
         return response
 
     def get_missing_token_response(self):
@@ -219,18 +170,7 @@ class PasswordResetView(APIView):
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        user = get_user_by_email(serializer.validated_data["email"])
-
-        if user and user.is_active:
-            reset_data = create_password_reset_data(user)
-            django_rq.enqueue(
-                send_password_reset_email_task,
-                user.id,
-                reset_data["uidb64"],
-                reset_data["token"],
-            )
-
+        request_password_reset(serializer.validated_data["email"])
         return ok_response(
             {"detail": "An email has been sent to reset your password."}
         )
@@ -245,26 +185,15 @@ class PasswordConfirmView(APIView):
     def post(self, request, uidb64, token):
         serializer = PasswordConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        user = self.get_user(uidb64)
-
-        if not user or not is_valid_token(user, token):
+        if not confirm_password_reset(
+            uidb64,
+            token,
+            serializer.validated_data["new_password"],
+        ):
             return self.get_invalid_token_response()
-
-        set_user_password(user, serializer.validated_data["new_password"])
-
         return ok_response(
             {"detail": "Your Password has been successfully reset."}
         )
-
-    def get_user(self, uidb64):
-        """Return a user decoded from uidb64."""
-        try:
-            user_id = get_user_id_from_uid(uidb64)
-        except Exception:
-            return None
-
-        return get_user_by_id(user_id)
 
     def get_invalid_token_response(self):
         return Response(

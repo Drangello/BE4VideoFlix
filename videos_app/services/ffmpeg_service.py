@@ -9,6 +9,41 @@ RESOLUTION_HEIGHTS = {
     "720p": 720,
     "1080p": 1080,
 }
+THUMBNAIL_INPUT_OPTIONS = ("-y", "-ss", "00:00:01", "-i")
+THUMBNAIL_OUTPUT_OPTIONS = ("-frames:v", "1", "-q:v", "2")
+HLS_INPUT_OPTIONS = ("-y", "-i")
+HLS_MAPPING_OPTIONS = (
+    "-map",
+    "0:v:0",
+    "-map",
+    "0:a?",
+)
+HLS_ENCODING_OPTIONS = (
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "23",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+)
+HLS_PLAYLIST_OPTIONS = (
+    "-flags",
+    "+cgop",
+    "-force_key_frames",
+    "expr:gte(t,n_forced*6)",
+    "-f",
+    "hls",
+    "-hls_time",
+    "6",
+    "-hls_list_size",
+    "0",
+    "-hls_playlist_type",
+    "vod",
+)
 
 
 def process_video(video):
@@ -45,15 +80,9 @@ def build_thumbnail_command(video, output_path):
     """Build the FFmpeg thumbnail command."""
     return [
         "ffmpeg",
-        "-y",
-        "-ss",
-        "00:00:01",
-        "-i",
+        *THUMBNAIL_INPUT_OPTIONS,
         video.source_file.path,
-        "-frames:v",
-        "1",
-        "-q:v",
-        "2",
+        *THUMBNAIL_OUTPUT_OPTIONS,
         str(output_path),
     ]
 
@@ -62,41 +91,21 @@ def build_hls_command(video, output_dir, height):
     """Build the FFmpeg HLS conversion command."""
     return [
         "ffmpeg",
-        "-y",
-        "-i",
+        *HLS_INPUT_OPTIONS,
         video.source_file.path,
-        "-map",
-        "0:v:0",
-        "-map",
-        "0:a?",
-        "-vf",
-        f"scale=-2:{height}",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "veryfast",
-        "-crf",
-        "23",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "128k",
-        "-flags",
-        "+cgop",
-        "-force_key_frames",
-        "expr:gte(t,n_forced*6)",
-        "-f",
-        "hls",
-        "-hls_time",
-        "6",
-        "-hls_list_size",
-        "0",
-        "-hls_playlist_type",
-        "vod",
+        *HLS_MAPPING_OPTIONS,
+        *get_scale_options(height),
+        *HLS_ENCODING_OPTIONS,
+        *HLS_PLAYLIST_OPTIONS,
         "-hls_segment_filename",
         str(output_dir / "segment_%03d.ts"),
         str(output_dir / "index.m3u8"),
     ]
+
+
+def get_scale_options(height):
+    """Return FFmpeg scaling options for a target height."""
+    return "-vf", f"scale=-2:{height}"
 
 
 def run_ffmpeg(command):
@@ -106,16 +115,23 @@ def run_ffmpeg(command):
 
 def get_thumbnail_path(video):
     """Return the thumbnail output path."""
-    return Path(settings.MEDIA_ROOT) / "videos" / "thumbnails" / (
-        f"{video.pk}.jpg"
+    return (
+        Path(settings.MEDIA_ROOT)
+        / "videos"
+        / "thumbnails"
+        / f"{video.pk}.jpg"
     )
 
 
 def get_hls_output_dir(video, resolution):
     """Return the HLS directory for one resolution."""
-    return Path(settings.MEDIA_ROOT) / "videos" / "hls" / str(
-        video.pk
-    ) / resolution
+    return (
+        Path(settings.MEDIA_ROOT)
+        / "videos"
+        / "hls"
+        / str(video.pk)
+        / resolution
+    )
 
 
 def get_media_relative_path(file_path):

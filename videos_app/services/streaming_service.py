@@ -12,9 +12,14 @@ def get_hls_file_path(movie_id, resolution, filename):
     if resolution not in VALID_RESOLUTIONS:
         raise Http404("Resolution not found.")
 
-    return Path(settings.MEDIA_ROOT) / "videos" / "hls" / str(
-        movie_id
-    ) / resolution / filename
+    return (
+        Path(settings.MEDIA_ROOT)
+        / "videos"
+        / "hls"
+        / str(movie_id)
+        / resolution
+        / filename
+    )
 
 
 def get_hls_file_response(file_path, content_type):
