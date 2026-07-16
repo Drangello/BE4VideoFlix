@@ -7,8 +7,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
-cd BE
+git clone https://github.com/Drangello/BE4VideoFlix.git
+cd BE4VideoFlix
 ```
 
 ### 2. Create environment file
