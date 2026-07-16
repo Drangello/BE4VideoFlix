@@ -7,6 +7,7 @@ class VideoListSerializer(serializers.ModelSerializer):
     """Serialize processed videos for the dashboard."""
 
     thumbnail_url = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
@@ -16,11 +17,20 @@ class VideoListSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "thumbnail_url",
+            "thumbnail",
             "category",
         )
 
     def get_thumbnail_url(self, video):
         """Return the absolute thumbnail URL."""
+        return self.build_thumbnail_url(video)
+
+    def get_thumbnail(self, video):
+        """Return the thumbnail URL for frontend compatibility."""
+        return self.build_thumbnail_url(video)
+
+    def build_thumbnail_url(self, video):
+        """Build an absolute thumbnail URL."""
         if not video.thumbnail:
             return None
 
