@@ -23,14 +23,6 @@ class VideoListSerializer(serializers.ModelSerializer):
 
     def get_thumbnail_url(self, video):
         """Return the absolute thumbnail URL."""
-        return self.build_thumbnail_url(video)
-
-    def get_thumbnail(self, video):
-        """Return the thumbnail URL for frontend compatibility."""
-        return self.build_thumbnail_url(video)
-
-    def build_thumbnail_url(self, video):
-        """Build an absolute thumbnail URL."""
         if not video.thumbnail:
             return None
 
@@ -38,5 +30,12 @@ class VideoListSerializer(serializers.ModelSerializer):
 
         if request:
             return request.build_absolute_uri(video.thumbnail.url)
+
+        return video.thumbnail.url
+
+    def get_thumbnail(self, video):
+        """Return the relative thumbnail URL."""
+        if not video.thumbnail:
+            return None
 
         return video.thumbnail.url
