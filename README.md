@@ -81,9 +81,9 @@ The backend creates:
 
 | App | Description |
 |---|---|
-| **`auth_app`** | Registration, activation, login, logout, token refresh, and password reset. |
-| **`videos_app`** | Video model, admin upload, background processing, thumbnails, and HLS streaming. |
-| **`common`** | Shared helpers, responses, validators, permissions, and constants. |
+| **`auth_app`** | Registration, activation, login, logout, token refresh and password reset. |
+| **`videos_app`** | Video model, admin upload, background processing, thumbnails and HLS streaming. |
+| **`common`** | Shared helpers, responses and validators. |
 | **`core`** | Project settings, URLs, and Docker-ready configuration. |
 
 ## Security & Permissions
