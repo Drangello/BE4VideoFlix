@@ -14,8 +14,13 @@ urlpatterns = [
         name="hls-playlist",
     ),
     path(
-        "video/<int:movie_id>/<str:resolution>/<str:segment>/",
+        "video/<int:movie_id>/<str:resolution>/<str:segment>",
         HLSSegmentView.as_view(),
         name="hls-segment",
+    ),
+    path(
+        "video/<int:movie_id>/<str:resolution>/<str:segment>/",
+        HLSSegmentView.as_view(),
+        name="hls-segment-slash",
     ),
 ]
