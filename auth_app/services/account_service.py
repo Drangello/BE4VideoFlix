@@ -23,7 +23,7 @@ def register_account(email, password):
     """Create an inactive account and queue its activation email."""
     user = create_inactive_user(email=email, password=password)
     activation_data = create_activation_data(user)
-    django_rq.enqueue(
+    django_rq.get_queue("emails").enqueue(
         send_activation_email_task,
         user.id,
         activation_data["uidb64"],
@@ -53,7 +53,7 @@ def request_password_reset(email):
         return
 
     reset_data = create_password_reset_data(user)
-    django_rq.enqueue(
+    django_rq.get_queue("emails").enqueue(
         send_password_reset_email_task,
         user.id,
         reset_data["uidb64"],

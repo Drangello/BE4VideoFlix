@@ -45,5 +45,8 @@ class VideoAdmin(admin.ModelAdmin):
     def enqueue_video_processing(self, video_id):
         """Queue video processing after database commit."""
         transaction.on_commit(
-            lambda: django_rq.enqueue(process_video_task, video_id)
-        )
+    lambda: django_rq.get_queue("videos").enqueue(
+        process_video_task,
+        video_id,
+    )
+)
