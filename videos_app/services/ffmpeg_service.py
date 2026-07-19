@@ -10,7 +10,7 @@ RESOLUTION_HEIGHTS = {
     "1080p": 1080,
 }
 THUMBNAIL_INPUT_OPTIONS = ("-y", "-ss", "00:00:01", "-i")
-THUMBNAIL_OUTPUT_OPTIONS = ("-frames:v", "1", "-q:v", "2")
+THUMBNAIL_OUTPUT_OPTIONS = ("-frames:v", "1", "-q:v", "2", "-update", "1")
 HLS_INPUT_OPTIONS = ("-y", "-i")
 HLS_MAPPING_OPTIONS = (
     "-map",
