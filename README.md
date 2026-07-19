@@ -13,38 +13,10 @@ cd BE4VideoFlix
 
 ### 2. Create environment file
 
-Create a `.env` file in the project root:
+Create a local `.env` file from the template:
 
-```env
-DEBUG=True
-SECRET_KEY=your-secret-key
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-DB_NAME=videoflix
-DB_USER=videoflix
-DB_PASSWORD=videoflix
-DB_HOST=db
-DB_PORT=5432
-
-REDIS_HOST=redis
-REDIS_LOCATION=redis://redis:6379/1
-REDIS_PORT=6379
-REDIS_DB=0
-
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=your-email@example.com
-EMAIL_HOST_PASSWORD=your-email-password
-EMAIL_USE_TLS=True
-EMAIL_USE_SSL=False
-DEFAULT_FROM_EMAIL=your-email@example.com
-
-FRONTEND_BASE_URL=http://127.0.0.1:5500
-COOKIE_SECURE=False
-CORS_ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500
-
-DJANGO_SUPERUSER_EMAIL=admin@example.com
-DJANGO_SUPERUSER_PASSWORD=adminpassword
+```bash
+cp .env.template .env
 ```
 
 ### 3. Start Docker containers
