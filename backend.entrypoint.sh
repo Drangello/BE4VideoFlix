@@ -40,4 +40,8 @@ python manage.py rqworker default &
 python manage.py rqworker emails &
 python manage.py rqworker videos &
 
-exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --reload
+exec gunicorn core.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers "${GUNICORN_WORKERS:-3}" \
+    --timeout "${GUNICORN_TIMEOUT:-300}" \
+    --reload
