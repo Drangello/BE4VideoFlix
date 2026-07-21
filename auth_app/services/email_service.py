@@ -1,8 +1,14 @@
+from email.mime.image import MIMEImage
+from pathlib import Path
 from urllib.parse import urlencode
 
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+
+EMAIL_IMAGE_CID = "videoflix-email-image"
+EMAIL_IMAGE_PATH = "auth_app/emails/mail.png"
 
 
 def build_frontend_url(page_path, uidb64, token):
@@ -28,12 +34,6 @@ def build_password_reset_url(uidb64, token):
         uidb64,
         token,
     )
-
-
-def build_logo_url():
-    """Build the frontend logo URL for emails."""
-    base_url = settings.FRONTEND_BASE_URL.rstrip("/")
-    return f"{base_url}/EmailTemplates_Backend/Logo.svg"
 
 
 def send_activation_email(user, uidb64, token):
@@ -78,14 +78,22 @@ def send_auth_email(
         message,
         button_text,
     )
+    email = build_email(subject, plain_message, html_message, recipient)
+    attach_email_image(email)
+    email.send()
+
+
+def build_email(subject, plain_message, html_message, recipient):
+    """Build a multipart email with HTML alternative."""
     email = EmailMultiAlternatives(
         subject,
         plain_message,
         settings.DEFAULT_FROM_EMAIL,
         [recipient],
     )
+    email.mixed_subtype = "related"
     email.attach_alternative(html_message, "text/html")
-    email.send()
+    return email
 
 
 def render_auth_email(action_url, headline, message, button_text):
@@ -97,6 +105,19 @@ def render_auth_email(action_url, headline, message, button_text):
             "headline": headline,
             "message": message,
             "button_text": button_text,
-            "logo_url": build_logo_url(),
+            "image_cid": EMAIL_IMAGE_CID,
         },
     )
+
+
+def attach_email_image(email):
+    """Attach the inline email image."""
+    image_path = finders.find(EMAIL_IMAGE_PATH)
+
+    if not image_path:
+        raise FileNotFoundError(f"Missing email image: {EMAIL_IMAGE_PATH}")
+
+    image = MIMEImage(Path(image_path).read_bytes())
+    image.add_header("Content-ID", f"<{EMAIL_IMAGE_CID}>")
+    image.add_header("Content-Disposition", "inline", filename="mail.png")
+    email.attach(image)
