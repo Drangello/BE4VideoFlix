@@ -1,4 +1,4 @@
-from email.mime.image import MIMEImage
+from email.message import MIMEPart
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -6,6 +6,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
 EMAIL_IMAGE_CID = "videoflix-email-image"
+EMAIL_IMAGE_FILENAME = "mail.png"
+EMAIL_IMAGE_SUBTYPE = "png"
 
 
 def build_frontend_url(page_path, uidb64, token):
@@ -76,19 +78,18 @@ def send_auth_email(
         button_text,
     )
     email = build_email(subject, plain_message, html_message, recipient)
-    attach_email_image(email)
     email.send()
 
 
 def build_email(subject, plain_message, html_message, recipient):
-    """Build a multipart email with HTML alternative."""
+    """Build an email with text, HTML and inline image."""
     email = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [recipient],
+        subject=subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipient],
     )
-    email.mixed_subtype = "related"
+    attach_email_image(email)
     email.attach_alternative(html_message, "text/html")
     return email
 
@@ -107,18 +108,25 @@ def render_auth_email(action_url, headline, message, button_text):
     )
 
 
-def get_email_image_path():
-    """Return the path to the versioned inline email image."""
-    image_path = settings.BASE_DIR / "auth_app" / "email_assets" / "mail.png"
-    if not image_path.is_file():
-        raise FileNotFoundError(f"Missing email image: {image_path}")
-    return image_path
-
-
 def attach_email_image(email):
     """Attach the inline email image."""
     image_path = get_email_image_path()
-    image = MIMEImage(image_path.read_bytes())
-    image.add_header("Content-ID", f"<{EMAIL_IMAGE_CID}>")
-    image.add_header("Content-Disposition", "inline", filename="mail.png")
+
+    if not image_path.exists():
+        raise FileNotFoundError(f"Missing email image: {image_path}")
+
+    image = MIMEPart()
+    image.set_content(
+        image_path.read_bytes(),
+        maintype="image",
+        subtype=EMAIL_IMAGE_SUBTYPE,
+        disposition="inline",
+        cid=f"<{EMAIL_IMAGE_CID}>",
+        filename=EMAIL_IMAGE_FILENAME,
+    )
     email.attach(image)
+
+
+def get_email_image_path():
+    """Return the local email image path."""
+    return settings.BASE_DIR / "auth_app" / "email_assets" / EMAIL_IMAGE_FILENAME
