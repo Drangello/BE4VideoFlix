@@ -1,14 +1,11 @@
 from email.mime.image import MIMEImage
-from pathlib import Path
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.contrib.staticfiles import finders
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
 EMAIL_IMAGE_CID = "videoflix-email-image"
-EMAIL_IMAGE_PATH = "auth_app/emails/mail.png"
 
 
 def build_frontend_url(page_path, uidb64, token):
@@ -110,14 +107,18 @@ def render_auth_email(action_url, headline, message, button_text):
     )
 
 
+def get_email_image_path():
+    """Return the path to the versioned inline email image."""
+    image_path = settings.BASE_DIR / "auth_app" / "email_assets" / "mail.png"
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Missing email image: {image_path}")
+    return image_path
+
+
 def attach_email_image(email):
     """Attach the inline email image."""
-    image_path = finders.find(EMAIL_IMAGE_PATH)
-
-    if not image_path:
-        raise FileNotFoundError(f"Missing email image: {EMAIL_IMAGE_PATH}")
-
-    image = MIMEImage(Path(image_path).read_bytes())
+    image_path = get_email_image_path()
+    image = MIMEImage(image_path.read_bytes())
     image.add_header("Content-ID", f"<{EMAIL_IMAGE_CID}>")
     image.add_header("Content-Disposition", "inline", filename="mail.png")
     email.attach(image)
